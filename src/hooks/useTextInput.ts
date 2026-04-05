@@ -258,9 +258,12 @@ export function useTextInput({
     if (key.meta || key.shift) {
       return cursor.insert('\n')
     }
-    // Apple Terminal doesn't support custom Shift+Enter keybindings,
-    // so we use native macOS modifier detection to check if Shift is held
-    if (env.terminal === 'Apple_Terminal' && isModifierPressed('shift')) {
+    // Terminals that don't support extended key reporting (CSI u / modifyOtherKeys)
+    // cannot communicate Shift+Enter via escape sequences. Fall back to native
+    // macOS modifier detection (Carbon API) which works regardless of terminal type.
+    // This is especially important under sudo, where TERM_PROGRAM may be stripped
+    // and terminal detection fails.
+    if (process.platform === 'darwin' && !key.shift && isModifierPressed('shift')) {
       return cursor.insert('\n')
     }
     onSubmit?.(originalValue)
