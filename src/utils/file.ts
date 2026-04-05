@@ -1,4 +1,4 @@
-import { chmodSync, writeFileSync as fsWriteFileSync } from 'fs'
+import { chmodSync, chownSync, writeFileSync as fsWriteFileSync } from 'fs'
 import { realpath, stat } from 'fs/promises'
 import { homedir } from 'os'
 import {
@@ -429,6 +429,21 @@ export function writeFileSyncAndFlush_DEPRECATED(
     if (targetExists && targetMode !== undefined) {
       chmodSync(tempPath, targetMode)
       logForDebugging(`Applied original permissions to temp file`)
+
+      // If running as root, preserve original file ownership so the
+      // non-root user can still read/write the file after we're done.
+      // rename() replaces the inode, making the new file owned by root.
+      if (process.getuid?.() === 0) {
+        try {
+          const origStat = fs.statSync(targetPath)
+          chownSync(tempPath, origStat.uid, origStat.gid)
+          logForDebugging(
+            `Preserved ownership: uid=${origStat.uid} gid=${origStat.gid}`,
+          )
+        } catch (chownErr) {
+          logForDebugging(`Failed to preserve ownership: ${chownErr}`)
+        }
+      }
     }
 
     // Atomic rename (on POSIX systems, this is atomic)
