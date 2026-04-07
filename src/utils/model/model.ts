@@ -384,7 +384,7 @@ export function renderModelSetting(setting: ModelName | ModelAlias): string {
   return renderModelName(setting)
 }
 
-// @[MODEL LAUNCH]: Add display name cases for the new model (base + [1m] variant if applicable).
+// @[MODEL LAUNCH]: Add display name cases for the new model (base + [1m]/[100k] variant if applicable).
 /**
  * Returns a human-readable display name for known public models, or null
  * if the model is not recognized as a public model.
@@ -395,6 +395,8 @@ export function getPublicModelDisplayName(model: ModelName): string | null {
       return 'Opus 4.6'
     case getModelStrings().opus46 + '[1m]':
       return 'Opus 4.6 (1M context)'
+    case getModelStrings().opus46 + '[100k]':
+      return 'Opus 4.6 (100K context)'
     case getModelStrings().opus45:
       return 'Opus 4.5'
     case getModelStrings().opus41:
@@ -403,16 +405,22 @@ export function getPublicModelDisplayName(model: ModelName): string | null {
       return 'Opus 4'
     case getModelStrings().sonnet46 + '[1m]':
       return 'Sonnet 4.6 (1M context)'
+    case getModelStrings().sonnet46 + '[100k]':
+      return 'Sonnet 4.6 (100K context)'
     case getModelStrings().sonnet46:
       return 'Sonnet 4.6'
     case getModelStrings().sonnet45 + '[1m]':
       return 'Sonnet 4.5 (1M context)'
+    case getModelStrings().sonnet45 + '[100k]':
+      return 'Sonnet 4.5 (100K context)'
     case getModelStrings().sonnet45:
       return 'Sonnet 4.5'
     case getModelStrings().sonnet40:
       return 'Sonnet 4'
     case getModelStrings().sonnet40 + '[1m]':
       return 'Sonnet 4 (1M context)'
+    case getModelStrings().sonnet40 + '[100k]':
+      return 'Sonnet 4 (100K context)'
     case getModelStrings().sonnet37:
       return 'Sonnet 3.7'
     case getModelStrings().sonnet35:
@@ -444,9 +452,13 @@ export function renderModelName(model: ModelName): string {
     const resolved = parseUserSpecifiedModel(model)
     const antModel = resolveAntModel(model)
     if (antModel) {
-      const baseName = antModel.model.replace(/\[1m\]$/i, '')
+      const baseName = antModel.model.replace(/\[(1m|100k)\]$/i, '')
       const masked = maskModelCodename(baseName)
-      const suffix = has1mContext(resolved) ? '[1m]' : ''
+      const suffix = has1mContext(resolved)
+        ? '[1m]'
+        : /\[100k\]/i.test(resolved)
+          ? '[100k]'
+          : ''
       return masked + suffix
     }
     if (resolved !== model) {
@@ -492,20 +504,24 @@ export function parseUserSpecifiedModel(
   const normalizedModel = modelInputTrimmed.toLowerCase()
 
   const has1mTag = has1mContext(normalizedModel)
+  const has100kTag = /\[100k\]/i.test(normalizedModel)
+  const contextSuffix = has1mTag ? '[1m]' : has100kTag ? '[100k]' : ''
   const modelString = has1mTag
     ? normalizedModel.replace(/\[1m]$/i, '').trim()
-    : normalizedModel
+    : has100kTag
+      ? normalizedModel.replace(/\[100k]$/i, '').trim()
+      : normalizedModel
 
   if (isModelAlias(modelString)) {
     switch (modelString) {
       case 'opusplan':
-        return getDefaultSonnetModel() + (has1mTag ? '[1m]' : '') // Sonnet is default, Opus in plan mode
+        return getDefaultSonnetModel() + contextSuffix // Sonnet is default, Opus in plan mode
       case 'sonnet':
-        return getDefaultSonnetModel() + (has1mTag ? '[1m]' : '')
+        return getDefaultSonnetModel() + contextSuffix
       case 'haiku':
-        return getDefaultHaikuModel() + (has1mTag ? '[1m]' : '')
+        return getDefaultHaikuModel() + contextSuffix
       case 'opus':
-        return getDefaultOpusModel() + (has1mTag ? '[1m]' : '')
+        return getDefaultOpusModel() + contextSuffix
       case 'best':
         return getBestModel()
       default:
@@ -522,17 +538,18 @@ export function parseUserSpecifiedModel(
     isLegacyOpusFirstParty(modelString) &&
     isLegacyModelRemapEnabled()
   ) {
-    return getDefaultOpusModel() + (has1mTag ? '[1m]' : '')
+    return getDefaultOpusModel() + contextSuffix
   }
 
   if (process.env.USER_TYPE === 'ant') {
     const has1mAntTag = has1mContext(normalizedModel)
-    const baseAntModel = normalizedModel.replace(/\[1m]$/i, '').trim()
+    const has100kAntTag = /\[100k\]/i.test(normalizedModel)
+    const antContextSuffix = has1mAntTag ? '[1m]' : has100kAntTag ? '[100k]' : ''
+    const baseAntModel = normalizedModel.replace(/\[(1m|100k)\]$/i, '').trim()
 
     const antModel = resolveAntModel(baseAntModel)
     if (antModel) {
-      const suffix = has1mAntTag ? '[1m]' : ''
-      return antModel.model + suffix
+      return antModel.model + antContextSuffix
     }
 
     // Fall through to the alias string if we cannot load the config. The API calls
@@ -541,9 +558,9 @@ export function parseUserSpecifiedModel(
   }
 
   // Preserve original case for custom model names (e.g., Azure Foundry deployment IDs)
-  // Only strip [1m] suffix if present, maintaining case of the base model
-  if (has1mTag) {
-    return modelInputTrimmed.replace(/\[1m\]$/i, '').trim() + '[1m]'
+  // Only strip context suffix if present, maintaining case of the base model
+  if (contextSuffix) {
+    return modelInputTrimmed.replace(/\[(1m|100k)\]$/i, '').trim() + contextSuffix
   }
   return modelInputTrimmed
 }
@@ -617,28 +634,35 @@ export function getMarketingNameForModel(modelId: string): string | undefined {
   }
 
   const has1m = modelId.toLowerCase().includes('[1m]')
+  const has100k = modelId.toLowerCase().includes('[100k]')
   const canonical = getCanonicalName(modelId)
 
+  const contextSuffix = has1m
+    ? ' (with 1M context)'
+    : has100k
+      ? ' (with 100K context)'
+      : ''
+
   if (canonical.includes('claude-opus-4-6')) {
-    return has1m ? 'Opus 4.6 (with 1M context)' : 'Opus 4.6'
+    return 'Opus 4.6' + contextSuffix
   }
   if (canonical.includes('claude-opus-4-5')) {
-    return 'Opus 4.5'
+    return 'Opus 4.5' + contextSuffix
   }
   if (canonical.includes('claude-opus-4-1')) {
-    return 'Opus 4.1'
+    return 'Opus 4.1' + contextSuffix
   }
   if (canonical.includes('claude-opus-4')) {
-    return 'Opus 4'
+    return 'Opus 4' + contextSuffix
   }
   if (canonical.includes('claude-sonnet-4-6')) {
-    return has1m ? 'Sonnet 4.6 (with 1M context)' : 'Sonnet 4.6'
+    return 'Sonnet 4.6' + contextSuffix
   }
   if (canonical.includes('claude-sonnet-4-5')) {
-    return has1m ? 'Sonnet 4.5 (with 1M context)' : 'Sonnet 4.5'
+    return 'Sonnet 4.5' + contextSuffix
   }
   if (canonical.includes('claude-sonnet-4')) {
-    return has1m ? 'Sonnet 4 (with 1M context)' : 'Sonnet 4'
+    return 'Sonnet 4' + contextSuffix
   }
   if (canonical.includes('claude-3-7-sonnet')) {
     return 'Claude 3.7 Sonnet'
@@ -657,5 +681,5 @@ export function getMarketingNameForModel(modelId: string): string | undefined {
 }
 
 export function normalizeModelStringForAPI(model: string): string {
-  return model.replace(/\[(1|2)m\]/gi, '')
+  return model.replace(/\[(1|2)m\]|\[100k\]/gi, '')
 }

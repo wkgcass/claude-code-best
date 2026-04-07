@@ -40,6 +40,10 @@ export function has1mContext(model: string): boolean {
   return /\[1m\]/i.test(model)
 }
 
+export function has100kContext(model: string): boolean {
+  return /\[100k\]/i.test(model)
+}
+
 // @[MODEL LAUNCH]: Update this pattern if the new model supports 1M context
 export function modelSupports1M(model: string): boolean {
   if (is1mContextDisabled()) {
@@ -65,6 +69,11 @@ export function getContextWindowForModel(
     if (!isNaN(override) && override > 0) {
       return override
     }
+  }
+
+  // [100k] suffix — explicit client-side opt-in for 100k context
+  if (has100kContext(model)) {
+    return 100_000
   }
 
   // [1m] suffix — explicit client-side opt-in, respected over all detection
