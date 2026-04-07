@@ -121,6 +121,7 @@ await cp('vendor/audio-capture', vendorDir, { recursive: true })
 console.log(`Copied vendor/audio-capture/ → ${vendorDir}/`)
 
 // Step 5: Bundle download-ripgrep script as standalone JS for postinstall
+/*
 const rgScript = await Bun.build({
   entrypoints: ['scripts/download-ripgrep.ts'],
   outdir,
@@ -150,3 +151,4 @@ chmodSync(cliBun, 0o755)
 chmodSync(cliNode, 0o755)
 
 console.log(`Generated ${cliBun} (shebang: bun) and ${cliNode} (shebang: node)`)
+*/

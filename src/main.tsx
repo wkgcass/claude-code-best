@@ -882,6 +882,8 @@ const _pendingSSH: PendingSSH | undefined = feature("SSH_REMOTE")
 		}
 	: undefined;
 
+let hasGracefulShutdown = false
+
 export async function main() {
 	profileCheckpoint("main_function_start");
 
@@ -901,6 +903,12 @@ export async function main() {
 		// the in-flight query and calls gracefulShutdown; skip here to avoid
 		// preempting it with a synchronous process.exit().
 		if (process.argv.includes("-p") || process.argv.includes("--print")) {
+			return;
+		}
+		// If setupGracefulShutdown() has already taken over (init() ran),
+		// let its handler do the proper cleanup (restore raw mode, exit alt
+		// screen, etc.) instead of force-exiting with a dirty terminal.
+		if (hasGracefulShutdown) {
 			return;
 		}
 		process.exit(0);
@@ -1280,6 +1288,10 @@ async function run(): Promise<CommanderCommand> {
 		]);
 		profileCheckpoint("preAction_after_mdm");
 		await init();
+		// init() calls setupGracefulShutdown() which registers a proper SIGINT
+		// handler that restores terminal state. From this point on, the early
+		// SIGINT handler should yield to it instead of force-exiting.
+		hasGracefulShutdown = true;
 		profileCheckpoint("preAction_after_init");
 
 		// process.title on Windows sets the console title directly; on POSIX,

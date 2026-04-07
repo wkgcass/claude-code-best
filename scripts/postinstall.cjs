@@ -327,7 +327,7 @@ async function downloadAndExtract() {
 }
 
 async function main() {
-  await downloadAndExtract()
+  //await downloadAndExtract()
 }
 
 main().catch((error) => {
