@@ -455,7 +455,7 @@ const LOCAL_GATE_DEFAULTS: Record<string, unknown> = {
   tengu_kairos_brief: true, // Brief mode
   tengu_kairos_brief_config: { enable_slash_command: true }, // Brief /slash command visibility
   tengu_sedge_lantern: true, // Away summary
-  tengu_onyx_plover: { enabled: true }, // Auto dream (memory consolidation)
+  tengu_onyx_plover: { enabled: false }, // Auto dream (memory consolidation) — disabled by default
   tengu_willow_mode: 'dialog', // Idle return prompt
 
   // ── Kill switches (keep true to prevent remote disable) ──────────
