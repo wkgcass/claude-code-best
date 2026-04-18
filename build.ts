@@ -26,7 +26,6 @@ const DEFAULT_BUILD_FEATURES = [
   'EXTRACT_MEMORIES',
   'VERIFICATION_AGENT',
   'KAIROS_BRIEF',
-  'AWAY_SUMMARY',
   'ULTRAPLAN',
   // P2: daemon + remote control server
   'DAEMON',

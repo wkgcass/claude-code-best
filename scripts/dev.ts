@@ -34,7 +34,7 @@ const DEFAULT_FEATURES = [
   "LODESTONE",
   // P1: API-dependent features
   "EXTRACT_MEMORIES", "VERIFICATION_AGENT",
-  "KAIROS_BRIEF", "AWAY_SUMMARY", "ULTRAPLAN",
+  "KAIROS_BRIEF", "ULTRAPLAN",
   // P2: daemon + remote control server
   "DAEMON",
   // ACP (Agent Client Protocol) agent mode
