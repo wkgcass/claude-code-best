@@ -20,12 +20,12 @@ import {
 
 /**
  * Whether auto-memory features are enabled (memdir, agent memory, past session search).
- * Enabled by default. Priority chain (first defined wins):
+ * Disabled by default. Priority chain (first defined wins):
  *   1. CLAUDE_CODE_DISABLE_AUTO_MEMORY env var (1/true → OFF, 0/false → ON)
  *   2. CLAUDE_CODE_SIMPLE (--bare) → OFF
  *   3. CCR without persistent storage → OFF (no CLAUDE_CODE_REMOTE_MEMORY_DIR)
  *   4. autoMemoryEnabled in settings.json (supports project-level opt-out)
- *   5. Default: enabled
+ *   5. Default: disabled
  */
 export function isAutoMemoryEnabled(): boolean {
   const envVal = process.env.CLAUDE_CODE_DISABLE_AUTO_MEMORY
@@ -51,7 +51,7 @@ export function isAutoMemoryEnabled(): boolean {
   if (settings.autoMemoryEnabled !== undefined) {
     return settings.autoMemoryEnabled
   }
-  return true
+  return false
 }
 
 /**
